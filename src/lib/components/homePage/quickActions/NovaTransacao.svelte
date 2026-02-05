@@ -11,6 +11,7 @@
 	import { CalendarIcon, Check, ChevronsUpDown, Loader2 } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 	import { tick } from 'svelte';
+	import { transactionsStore } from '$lib/stores/transacoes';
 
 	// Para Calendar
 	import { CalendarDate, getLocalTimeZone, today } from '@internationalized/date';
@@ -82,6 +83,7 @@
 		} catch (err: any) {
 			toast.error(err.message || 'Falha ao adicionar transação');
 		} finally {
+			await transactionsStore.refresh();
 			isSubmitting = false;
 		}
 	}

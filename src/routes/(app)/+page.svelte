@@ -18,12 +18,8 @@
 	import { theme } from '$lib/stores/theme';
 	import { Switch } from '$lib/components/ui/switch';
 
-	// dados fake pra demo
-	const summary = [
-		{ title: 'Saldo Atual', value: 'R$ 8.250,00', icon: Wallet, color: 'text-blue-500' },
-		{ title: 'Receitas', value: 'R$ 3.450,00', icon: Plus, color: 'text-green-500' },
-		{ title: 'Despesas', value: 'R$ 1.980,00', icon: Minus, color: 'text-red-500' }
-	];
+	import { transactionsStore } from '$lib/stores/transacoes';
+	import type { TransacaoDTO } from '$lib/stores/transacoes';
 
 	const quickActions = [
 		{ component: NovaTransacao, key: 'transacao' },
@@ -32,24 +28,65 @@
 		{ component: Relatorios, key: 'relatorios' }
 	];
 
-	type TransacaoDTO = {
-		id: number;
-		valor: string;
-		data: string;
-		nome: string;
-		movimentoTipo: 'receita' | 'despesa';
-		comentario: string | null;
-	};
-
 	let transactions = $state<TransacaoDTO[]>([]);
 
 	$effect(() => {
-		const fetchTransactions = async () => {
-			const res = await fetch('/api/transacoes/buscar');
-			transactions = await res.json();
-		};
-		fetchTransactions();
+		transactionsStore.load();
 	});
+
+	$effect(() => {
+		const unsubscribe = transactionsStore.subscribe((data) => {
+			transactions = data;
+		});
+
+		return unsubscribe;
+	});
+
+	const summary = $derived(
+		(() => {
+			let receitas = 0;
+			let despesas = 0;
+
+			for (const tx of transactions) {
+				const valor = Number(tx.valor);
+
+				if (tx.movimentoTipo === 'receita') {
+					receitas += valor;
+				} else {
+					despesas += valor;
+				}
+			}
+
+			const saldo = receitas - despesas;
+
+			const format = (v: number) =>
+				v.toLocaleString('pt-BR', {
+					style: 'currency',
+					currency: 'BRL'
+				});
+
+			return [
+				{
+					title: 'Saldo Atual',
+					value: format(saldo),
+					icon: Wallet,
+					color: saldo >= 0 ? 'text-blue-500' : 'text-red-500'
+				},
+				{
+					title: 'Receitas',
+					value: format(receitas),
+					icon: Plus,
+					color: 'text-green-500'
+				},
+				{
+					title: 'Despesas',
+					value: format(despesas),
+					icon: Minus,
+					color: 'text-red-500'
+				}
+			];
+		})()
+	);
 </script>
 
 <div class="space-y-6 p-6">

@@ -1,24 +1,65 @@
 <script lang="ts">
-	import * as Chart from '$lib/components/ui/chart/index.js';
+	import * as Chart from '$lib/components/ui/chart';
 	import { scaleBand } from 'd3-scale';
 	import { BarChart } from 'layerchart';
 
-	const chartData = [
-		{ month: 'January', desktop: 186, mobile: 80 },
-		{ month: 'February', desktop: 305, mobile: 200 },
-		{ month: 'March', desktop: 237, mobile: 120 },
-		{ month: 'April', desktop: 73, mobile: 190 },
-		{ month: 'May', desktop: 209, mobile: 130 },
-		{ month: 'June', desktop: 214, mobile: 140 }
-	];
+	import { transactionsStore } from '$lib/stores/transacoes';
+	import type { TransacaoDTO } from '$lib/stores/transacoes';
+
+	let transactions = $state<TransacaoDTO[]>([]);
+
+	$effect(() => {
+		transactionsStore.load();
+	});
+
+	$effect(() => {
+		const unsubscribe = transactionsStore.subscribe((data) => {
+			transactions = data;
+		});
+
+		return unsubscribe;
+	});
+
+	/**
+	 * Agrupa por mês e separa receita / despesa
+	 */
+	const chartData = $derived(
+		(() => {
+			const map = new Map<string, { receita: number; despesa: number }>();
+
+			for (const tx of transactions) {
+				const month = new Date(tx.data).toLocaleDateString('pt-BR', {
+					month: 'long'
+				});
+
+				if (!map.has(month)) {
+					map.set(month, { receita: 0, despesa: 0 });
+				}
+
+				const valor = Number(tx.valor);
+
+				if (tx.movimentoTipo === 'receita') {
+					map.get(month)!.receita += valor;
+				} else {
+					map.get(month)!.despesa += valor;
+				}
+			}
+
+			return Array.from(map.entries()).map(([month, v]) => ({
+				month,
+				receita: v.receita,
+				despesa: v.despesa
+			}));
+		})()
+	);
 
 	const chartConfig = {
-		desktop: {
-			label: 'Desktop',
+		receita: {
+			label: 'Receitas',
 			color: '#22C55E'
 		},
-		mobile: {
-			label: 'Mobile',
+		despesa: {
+			label: 'Despesas',
 			color: '#EF4444'
 		}
 	} satisfies Chart.ChartConfig;
@@ -34,14 +75,14 @@
 		tooltip={false}
 		series={[
 			{
-				key: 'desktop',
-				label: chartConfig.desktop.label,
-				color: chartConfig.desktop.color
+				key: 'receita',
+				label: chartConfig.receita.label,
+				color: chartConfig.receita.color
 			},
 			{
-				key: 'mobile',
-				label: chartConfig.mobile.label,
-				color: chartConfig.mobile.color
+				key: 'despesa',
+				label: chartConfig.despesa.label,
+				color: chartConfig.despesa.color
 			}
 		]}
 	/>

@@ -1,7 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { transacoes, tiposTransacao } from '$lib/server/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, gte, and } from 'drizzle-orm';
 
 export async function GET({ locals }) {
 	const user = locals.user;
@@ -9,6 +9,9 @@ export async function GET({ locals }) {
 	if (!user) {
 		throw error(401, 'Unauthorized');
 	}
+
+	const twelveMonthsAgo = new Date();
+	twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
 
 	const result = await db
 		.select({
@@ -21,9 +24,8 @@ export async function GET({ locals }) {
 		})
 		.from(transacoes)
 		.innerJoin(tiposTransacao, eq(transacoes.tipoTransacaoId, tiposTransacao.id))
-		.where(eq(transacoes.userId, user.id))
-		.orderBy(desc(transacoes.data))
-		.limit(10);
+		.where(and(eq(transacoes.userId, user.id), gte(transacoes.data, twelveMonthsAgo)))
+		.orderBy(desc(transacoes.data));
 
 	return json(result);
 }
