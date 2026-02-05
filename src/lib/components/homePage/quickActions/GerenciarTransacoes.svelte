@@ -4,6 +4,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Trash2, Pencil, Plus, Loader2, BookOpenCheck } from 'lucide-svelte';
 	import NovaTransacao from '@/components/homePage/quickActions/NovaTransacao.svelte';
+	import DialogExcluirTransacao from '@/components/homePage/ExcluirTransacao.svelte';
+	import DialogEditarTransacao from '@/components/homePage/EditarTransacao.svelte';
 
 	import { allTransactions } from '$lib/stores/transacoes';
 
@@ -31,12 +33,22 @@
 		return new Date(date).toLocaleDateString('pt-BR');
 	}
 
+	let dialogExcluirOpen = $state(false);
+	let dialogEditarOpen = $state(false);
+	let transacaoSelecionada: (typeof $transacoes)[number] | null = $state(null);
+
 	function excluir(id: number) {
-		console.log('Excluir', id);
+		const tx = $transacoes.find((t) => t.id === id);
+		if (!tx) return;
+		transacaoSelecionada = tx;
+		dialogExcluirOpen = true;
 	}
 
 	function editar(id: number) {
-		console.log('Editar', id);
+		const tx = $transacoes.find((t) => t.id === id);
+		if (!tx) return;
+		transacaoSelecionada = tx;
+		dialogEditarOpen = true;
 	}
 
 	function refreshAfterCreate() {
@@ -130,3 +142,11 @@
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
+
+<DialogExcluirTransacao
+	bind:open={dialogExcluirOpen}
+	transacaoId={transacaoSelecionada?.id ?? null}
+	transacaoDescricao={transacaoSelecionada?.comentario ?? ''}
+/>
+
+<DialogEditarTransacao bind:open={dialogEditarOpen} transacao={transacaoSelecionada} />
