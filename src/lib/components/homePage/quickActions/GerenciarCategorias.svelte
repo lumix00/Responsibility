@@ -16,7 +16,7 @@
 	// Estados gerais
 	let open = $state(false);
 	let categorias = $derived(tiposStore.tipos);
-	let loading = $derived(tiposStore.loading);
+	let loading = tiposStore.loading;
 
 	$effect(() => {
 		if (open) {
@@ -62,7 +62,8 @@
 			toast.success(`"${novo.nome}" adicionada com sucesso!`);
 
 			// Atualiza lista imediatamente
-			categorias = [...categorias, novo];
+			categorias.update((current) => [...current, novo]);
+
 			modo = 'lista'; // volta para a lista após adicionar
 
 			// Reseta form
@@ -93,7 +94,7 @@
 			}
 
 			toast.success(`"${nome}" excluída com sucesso`);
-			categorias = categorias.filter((c) => c.id !== id);
+			categorias.update((current) => current.filter((c) => c.id !== id));
 			confirmOpen = false;
 		} catch (err: any) {
 			toast.error(err.message || 'Falha ao excluir categoria');
@@ -144,17 +145,17 @@
 
 		<div class="py-4">
 			{#if modo === 'lista'}
-				{#if loading}
+				{#if $loading}
 					<div class="flex justify-center py-10">
 						<Loader2 class="h-8 w-8 animate-spin text-primary" />
 					</div>
-				{:else if categorias.length === 0}
+				{:else if $categorias.length === 0}
 					<p class="py-8 text-center text-muted-foreground">
 						Você ainda não tem categorias cadastradas.
 					</p>
 				{:else}
 					<div class="space-y-3">
-						{#each categorias as cat (cat.id)}
+						{#each $categorias as cat (cat.id)}
 							<div class="flex items-center justify-between rounded-md border p-3">
 								<div>
 									<p class="font-medium">{cat.nome}</p>

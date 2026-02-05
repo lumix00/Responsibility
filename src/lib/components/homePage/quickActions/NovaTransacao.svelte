@@ -18,7 +18,7 @@
 	import { tiposStore } from '$lib/stores/transacoes';
 
 	const tipos = $derived(tiposStore.tipos);
-	const loadingTipos = $derived(tiposStore.loading);
+	const loadingTipos = tiposStore.loading;
 
 	$effect(() => {
 		if (open) {
@@ -37,7 +37,7 @@
 	let triggerRef = $state<HTMLButtonElement | null>(null);
 
 	const selectedLabel = $derived(
-		tipos.find((t) => t.id === Number(selectedTipoId))?.nome || 'Selecione uma categoria...'
+		$tipos.find((t) => t.id === Number(selectedTipoId))?.nome || 'Selecione uma categoria...'
 	);
 
 	async function handleSubmit() {
@@ -152,7 +152,7 @@
 			<div class="grid gap-2">
 				<Label>Categoria</Label>
 
-				{#if loadingTipos}
+				{#if $loadingTipos}
 					<Button variant="outline" class="w-full justify-start" disabled>
 						<Loader2 class="mr-2 h-4 w-4 animate-spin" />
 						Carregando...
@@ -165,7 +165,7 @@
 								role="combobox"
 								aria-expanded={popoverOpen}
 								class="w-full justify-between"
-								disabled={isSubmitting || tipos.length === 0}
+								disabled={isSubmitting || $tipos.length === 0}
 							>
 								{selectedLabel}
 								<ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -178,7 +178,7 @@
 								<Command.List>
 									<Command.Empty>Nenhuma categoria encontrada.</Command.Empty>
 									<Command.Group>
-										{#each tipos as t (t.id)}
+										{#each $tipos as t (t.id)}
 											<Command.Item
 												value={t.nome}
 												onSelect={() => {
@@ -202,7 +202,7 @@
 						</Popover.Content>
 					</Popover.Root>
 
-					{#if tipos.length === 0 && !loadingTipos}
+					{#if $tipos.length === 0 && !loadingTipos}
 						<p class="mt-1 text-sm text-muted-foreground">Nenhuma categoria cadastrada ainda.</p>
 					{/if}
 				{/if}

@@ -13,6 +13,7 @@
 	import NovoTipo from '@/components/homePage/quickActions/NovoTipo.svelte';
 	import GerenciarCategorias from '@/components/homePage/quickActions/GerenciarCategorias.svelte';
 	import Relatorios from '@/components/homePage/quickActions/Relatorios.svelte';
+	import GerenciarTransacoes from '@/components/homePage/quickActions/GerenciarTransacoes.svelte';
 
 	import { Wallet, Plus, Minus, Moon, Sun } from 'lucide-svelte';
 	import { theme } from '$lib/stores/theme';
@@ -25,6 +26,7 @@
 		{ component: NovaTransacao, key: 'transacao' },
 		{ component: GerenciarCategorias, key: 'gerenciar-categorias' },
 		{ component: NovoTipo, key: 'tipo' },
+		{ component: GerenciarTransacoes, key: 'gerenciar-transacoes' },
 		{ component: Relatorios, key: 'relatorios' }
 	];
 

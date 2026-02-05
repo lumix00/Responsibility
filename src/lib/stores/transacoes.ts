@@ -38,6 +38,52 @@ function createTransacoesStore() {
 
 export const transactionsStore = createTransacoesStore();
 
+function createAllTransacoesStore() {
+	const allTransactionsStore = writable<TransacaoDTO[]>([]);
+	const loadingStore = writable(false);
+
+	let loaded = false;
+
+	async function fetchAll() {
+		if (loaded) return;
+		loadingStore.set(true);
+
+		try {
+			const res = await fetch('/api/transacoes/buscar-todas');
+			if (!res.ok) throw new Error('Falha ao buscar transações');
+			const data: TransacaoDTO[] = await res.json();
+			allTransactionsStore.set(data);
+			loaded = true;
+		} catch (err) {
+			console.error(err);
+			allTransactionsStore.set([]);
+		} finally {
+			loadingStore.set(false);
+		}
+	}
+
+	function clear() {
+		allTransactionsStore.set([]);
+		loaded = false;
+	}
+
+	function refresh() {
+		loaded = false;
+		return fetchAll();
+	}
+
+	return {
+		allTransactions: allTransactionsStore,
+		loadingAll: loadingStore,
+		fetchAll,
+		refresh,
+		clear // ← novo método
+	};
+}
+
+export const allTransactions = createAllTransacoesStore();
+
+//
 import { toast } from 'svelte-sonner';
 
 export type TipoTransacao = {
@@ -46,25 +92,30 @@ export type TipoTransacao = {
 	movimentoTipo: 'receita' | 'despesa';
 };
 
-let tipos = $state<TipoTransacao[]>([]);
-let loading = $state(false);
+// Stores internos
+const tipos = writable<TipoTransacao[]>([]);
+const loading = writable(false);
+
 let loaded = false;
 
 async function fetchTipos() {
-	if (loaded || loading) return;
+	let isLoading: boolean = false;
+	loading.subscribe((value) => (isLoading = value))();
+	if (loaded || isLoading) return;
 
-	loading = true;
+	loading.set(true);
 	try {
 		const res = await fetch('/api/tipos-transacao/buscarTipos');
 		if (!res.ok) throw new Error();
 
-		tipos = await res.json();
+		const data = await res.json();
+		tipos.set(data);
 		loaded = true;
 	} catch {
 		toast.error('Não foi possível carregar as categorias');
-		tipos = [];
+		tipos.set([]);
 	} finally {
-		loading = false;
+		loading.set(false);
 	}
 }
 
@@ -74,12 +125,8 @@ function refreshTipos() {
 }
 
 export const tiposStore = {
-	get tipos() {
-		return tipos;
-	},
-	get loading() {
-		return loading;
-	},
+	tipos,
+	loading,
 	fetchTipos,
 	refreshTipos
 };
