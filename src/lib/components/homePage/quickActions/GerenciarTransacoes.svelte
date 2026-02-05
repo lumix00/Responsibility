@@ -2,7 +2,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Table from '$lib/components/ui/table';
 	import { Button } from '$lib/components/ui/button';
-	import { Trash2, Pencil, Plus, Loader2 } from 'lucide-svelte';
+	import { Trash2, Pencil, Plus, Loader2, BookOpenCheck } from 'lucide-svelte';
 	import NovaTransacao from '@/components/homePage/quickActions/NovaTransacao.svelte';
 
 	import { allTransactions } from '$lib/stores/transacoes';
@@ -38,11 +38,18 @@
 	function editar(id: number) {
 		console.log('Editar', id);
 	}
+
+	function refreshAfterCreate() {
+		allTransactions.refresh();
+	}
 </script>
 
 <Dialog.Root bind:open>
 	<Dialog.Trigger>
-		<Button variant="outline">Gerenciar Transações</Button>
+		<Button variant="outline">
+			<BookOpenCheck />
+			Gerenciar Transações
+		</Button>
 	</Dialog.Trigger>
 
 	<Dialog.Content class="flex max-h-[90vh] max-w-[85vw] flex-col gap-0 p-0 sm:max-w-[85vw]">
@@ -53,7 +60,7 @@
 
 		<div class="min-h-0 flex-1 overflow-y-auto px-6 py-4">
 			<div class="mb-6 flex justify-end">
-				<NovaTransacao />
+				<NovaTransacao onSuccess={refreshAfterCreate} />
 			</div>
 
 			{#if $loading}

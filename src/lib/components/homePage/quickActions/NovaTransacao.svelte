@@ -17,6 +17,8 @@
 	import { CalendarDate, getLocalTimeZone, today } from '@internationalized/date';
 	import { tiposStore } from '$lib/stores/transacoes';
 
+	let { onSuccess }: { onSuccess?: () => void | Promise<void> } = $props();
+
 	const tipos = $derived(tiposStore.tipos);
 	const loadingTipos = tiposStore.loading;
 
@@ -41,7 +43,6 @@
 	);
 
 	async function handleSubmit() {
-		console.log('handleSubmit foi chamado!');
 		if (!valor || !data || !selectedTipoId) {
 			toast.error('Preencha os campos obrigatórios');
 			return;
@@ -74,6 +75,9 @@
 			data = today(getLocalTimeZone());
 			comentario = '';
 			selectedTipoId = '';
+			if (onSuccess) {
+				await onSuccess();
+			}
 		} catch (err: any) {
 			toast.error(err.message || 'Falha ao adicionar transação');
 		} finally {

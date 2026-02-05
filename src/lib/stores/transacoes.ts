@@ -77,7 +77,7 @@ function createAllTransacoesStore() {
 		loadingAll: loadingStore,
 		fetchAll,
 		refresh,
-		clear // ← novo método
+		clear
 	};
 }
 
