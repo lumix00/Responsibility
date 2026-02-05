@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { LogOut } from 'lucide-svelte';
 
@@ -25,18 +25,31 @@
 		{ title: 'Despesas', value: 'R$ 1.980,00', icon: Minus, color: 'text-red-500' }
 	];
 
-	const transactions = [
-		{ id: 1, desc: 'Supermercado', amount: '- R$ 150,00', date: '02/02/2026' },
-		{ id: 2, desc: 'Salário', amount: '+ R$ 3.000,00', date: '01/02/2026' },
-		{ id: 3, desc: 'Café', amount: '- R$ 25,00', date: '01/02/2026' }
-	];
-
 	const quickActions = [
 		{ component: NovaTransacao, key: 'transacao' },
 		{ component: GerenciarCategorias, key: 'gerenciar-categorias' },
 		{ component: NovoTipo, key: 'tipo' },
 		{ component: Relatorios, key: 'relatorios' }
 	];
+
+	type TransacaoDTO = {
+		id: number;
+		valor: string;
+		data: string;
+		nome: string;
+		movimentoTipo: 'receita' | 'despesa';
+		comentario: string | null;
+	};
+
+	let transactions = $state<TransacaoDTO[]>([]);
+
+	$effect(() => {
+		const fetchTransactions = async () => {
+			const res = await fetch('/api/transacoes/buscar');
+			transactions = await res.json();
+		};
+		fetchTransactions();
+	});
 </script>
 
 <div class="space-y-6 p-6">
@@ -93,8 +106,8 @@
 			</Card.Header>
 			<Card.Content class="space-y-2">
 				<ScrollArea class="h-48">
-					{#each transactions as tx}
-						<TransactionItem {...tx} />
+					{#each transactions as tx (tx.id)}
+						<TransactionItem {tx} />
 					{/each}
 				</ScrollArea>
 			</Card.Content>
