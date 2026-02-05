@@ -4,6 +4,7 @@
 	import { Loader2, Trash2 } from 'lucide-svelte';
 	import { allTransactions } from '$lib/stores/transacoes';
 	import { toast } from 'svelte-sonner';
+	import { transactionsStore } from '$lib/stores/transacoes';
 
 	type Props = {
 		open?: boolean;
@@ -41,6 +42,7 @@
 		} catch (err: any) {
 			toast.error(err.message || 'Erro ao excluir transação');
 		} finally {
+			await transactionsStore.refresh();
 			loading = false;
 		}
 	}

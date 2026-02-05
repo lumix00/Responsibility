@@ -13,6 +13,7 @@
 	import { Calendar } from '$lib/components/ui/calendar/index.js';
 	import { cn } from '$lib/utils.js';
 	import { CalendarIcon } from 'lucide-svelte';
+	import { transactionsStore } from '$lib/stores/transacoes';
 
 	// Para Calendar
 	import { CalendarDate, getLocalTimeZone, parseDate, today } from '@internationalized/date';
@@ -70,6 +71,7 @@
 		} catch (err: any) {
 			toast.error(err.message || 'Erro ao atualizar transação');
 		} finally {
+			await transactionsStore.refresh();
 			loading = false;
 		}
 	}
