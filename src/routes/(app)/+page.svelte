@@ -157,8 +157,8 @@
 			</Card.Header>
 
 			<Card.Content class="space-y-3">
-				{#each quickActions as act (act.key)}
-					<svelte:component this={act.component} />
+				{#each quickActions as act}
+					<act.component />
 				{/each}
 			</Card.Content>
 		</Card.Root>

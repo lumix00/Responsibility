@@ -37,3 +37,49 @@ function createTransacoesStore() {
 }
 
 export const transactionsStore = createTransacoesStore();
+
+import { toast } from 'svelte-sonner';
+
+export type TipoTransacao = {
+	id: number;
+	nome: string;
+	movimentoTipo: 'receita' | 'despesa';
+};
+
+let tipos = $state<TipoTransacao[]>([]);
+let loading = $state(false);
+let loaded = false;
+
+async function fetchTipos() {
+	if (loaded || loading) return;
+
+	loading = true;
+	try {
+		const res = await fetch('/api/tipos-transacao/buscarTipos');
+		if (!res.ok) throw new Error();
+
+		tipos = await res.json();
+		loaded = true;
+	} catch {
+		toast.error('Não foi possível carregar as categorias');
+		tipos = [];
+	} finally {
+		loading = false;
+	}
+}
+
+function refreshTipos() {
+	loaded = false;
+	fetchTipos();
+}
+
+export const tiposStore = {
+	get tipos() {
+		return tipos;
+	},
+	get loading() {
+		return loading;
+	},
+	fetchTipos,
+	refreshTipos
+};

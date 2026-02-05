@@ -15,15 +15,23 @@
 
 	// Para Calendar
 	import { CalendarDate, getLocalTimeZone, today } from '@internationalized/date';
+	import { tiposStore } from '$lib/stores/transacoes';
+
+	const tipos = $derived(tiposStore.tipos);
+	const loadingTipos = $derived(tiposStore.loading);
+
+	$effect(() => {
+		if (open) {
+			tiposStore.fetchTipos();
+		}
+	});
 
 	let open = $state(false);
 	let valor = $state<number | null>(null);
 	let data = $state<CalendarDate | undefined>(today(getLocalTimeZone()));
 	let comentario = $state('');
-	let selectedTipoId = $state<string>(''); // string para combobox
+	let selectedTipoId = $state<string>('');
 
-	let tipos = $state<{ id: number; nome: string; movimentoTipo: 'receita' | 'despesa' }[]>([]);
-	let loadingTipos = $state(false);
 	let isSubmitting = $state(false);
 	let popoverOpen = $state(false);
 	let triggerRef = $state<HTMLButtonElement | null>(null);
@@ -31,20 +39,6 @@
 	const selectedLabel = $derived(
 		tipos.find((t) => t.id === Number(selectedTipoId))?.nome || 'Selecione uma categoria...'
 	);
-
-	async function loadTipos() {
-		loadingTipos = true;
-		try {
-			const res = await fetch('/api/tipos-transacao/buscarTipos');
-			if (!res.ok) throw new Error();
-			tipos = await res.json();
-		} catch {
-			toast.error('Não foi possível carregar as categorias');
-			tipos = [];
-		} finally {
-			loadingTipos = false;
-		}
-	}
 
 	async function handleSubmit() {
 		console.log('handleSubmit foi chamado!');
@@ -97,12 +91,6 @@
 	function cancelar() {
 		open = false;
 	}
-
-	$effect(() => {
-		if (open) {
-			loadTipos();
-		}
-	});
 
 	function closeAndFocusTrigger() {
 		popoverOpen = false;

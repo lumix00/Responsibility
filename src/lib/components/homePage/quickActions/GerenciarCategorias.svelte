@@ -6,6 +6,7 @@
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { Trash2, Loader2, Pencil } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
+	import { tiposStore } from '@/stores/transacoes';
 
 	const { triggerText = 'Gerenciar Categorias' } = $props();
 
@@ -14,8 +15,14 @@
 
 	// Estados gerais
 	let open = $state(false);
-	let categorias = $state<any[]>([]);
-	let loading = $state(true);
+	let categorias = $derived(tiposStore.tipos);
+	let loading = $derived(tiposStore.loading);
+
+	$effect(() => {
+		if (open) {
+			tiposStore.fetchTipos();
+		}
+	});
 
 	// Para adicionar
 	let nomeNovo = $state('');
@@ -26,20 +33,6 @@
 	let deletingId = $state<number | null>(null);
 	let confirmOpen = $state(false);
 	let categoriaParaExcluir = $state<{ id: number; nome: string } | null>(null);
-
-	// Carrega categorias
-	async function loadCategorias() {
-		loading = true;
-		try {
-			const res = await fetch('/api/tipos-transacao/buscarTipos');
-			if (!res.ok) throw new Error();
-			categorias = await res.json();
-		} catch {
-			toast.error('Não foi possível carregar as categorias');
-		} finally {
-			loading = false;
-		}
-	}
 
 	// Adiciona nova categoria
 	async function adicionarCategoria() {
@@ -109,14 +102,6 @@
 			categoriaParaExcluir = null;
 		}
 	}
-
-	// Recarrega ao abrir e reseta modo para 'lista'
-	$effect(() => {
-		if (open) {
-			modo = 'lista';
-			loadCategorias();
-		}
-	});
 
 	// Label do select de adicionar
 	const tipoLabel = $derived(movimentoTipo === 'receita' ? 'Receita' : 'Despesa');
