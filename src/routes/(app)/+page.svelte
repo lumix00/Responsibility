@@ -33,8 +33,8 @@
 
 	const quickActions = [
 		{ component: NovaTransacao, key: 'transacao' },
-		{ component: NovoTipo, key: 'tipo' },
 		{ component: GerenciarCategorias, key: 'gerenciar-categorias' },
+		{ component: NovoTipo, key: 'tipo' },
 		{ component: Relatorios, key: 'relatorios' }
 	];
 </script>

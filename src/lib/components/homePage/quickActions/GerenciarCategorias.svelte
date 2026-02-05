@@ -7,8 +7,6 @@
 	import { Trash2, Loader2, Pencil } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 
-	import { SquareChartGantt } from 'lucide-svelte';
-
 	const { triggerText = 'Gerenciar Categorias' } = $props();
 
 	// Abas / modo atual
@@ -26,6 +24,8 @@
 
 	// Para deletar
 	let deletingId = $state<number | null>(null);
+	let confirmOpen = $state(false);
+	let categoriaParaExcluir = $state<{ id: number; nome: string } | null>(null);
 
 	// Carrega categorias
 	async function loadCategorias() {
@@ -83,10 +83,12 @@
 	}
 
 	// Deleta categoria
-	async function deletarCategoria(id: number, nome: string) {
-		if (!confirm(`Tem certeza que deseja excluir "${nome}"?`)) return;
+	async function deletarCategoriaConfirmada() {
+		if (!categoriaParaExcluir) return;
 
+		const { id, nome } = categoriaParaExcluir;
 		deletingId = id;
+
 		try {
 			const res = await fetch(`/api/tipos-transacao/deletarTipo/${id}`, {
 				method: 'DELETE'
@@ -99,10 +101,12 @@
 
 			toast.success(`"${nome}" excluída com sucesso`);
 			categorias = categorias.filter((c) => c.id !== id);
+			confirmOpen = false;
 		} catch (err: any) {
 			toast.error(err.message || 'Falha ao excluir categoria');
 		} finally {
 			deletingId = null;
+			categoriaParaExcluir = null;
 		}
 	}
 
@@ -175,7 +179,10 @@
 									variant="ghost"
 									size="icon"
 									class="text-destructive hover:bg-destructive/10"
-									onclick={() => deletarCategoria(cat.id, cat.nome)}
+									onclick={() => {
+										categoriaParaExcluir = { id: cat.id, nome: cat.nome };
+										confirmOpen = true;
+									}}
 									disabled={deletingId === cat.id}
 								>
 									{#if deletingId === cat.id}
@@ -238,6 +245,38 @@
 			{:else}
 				<Button variant="outline" onclick={() => (open = false)}>Fechar</Button>
 			{/if}
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root bind:open={confirmOpen}>
+	<Dialog.Content class="sm:max-w-md">
+		<Dialog.Header>
+			<Dialog.Title>Excluir categoria</Dialog.Title>
+			<Dialog.Description>
+				Tem certeza que deseja excluir
+				<strong> "{categoriaParaExcluir?.nome}"</strong>? Essa ação não pode ser desfeita.
+			</Dialog.Description>
+		</Dialog.Header>
+
+		<Dialog.Footer class="flex justify-end gap-2">
+			<Button
+				variant="outline"
+				onclick={() => {
+					confirmOpen = false;
+					categoriaParaExcluir = null;
+				}}
+			>
+				Cancelar
+			</Button>
+
+			<Button
+				variant="destructive"
+				onclick={deletarCategoriaConfirmada}
+				disabled={deletingId === categoriaParaExcluir?.id}
+			>
+				{deletingId === categoriaParaExcluir?.id ? 'Excluindo...' : 'Confirmar exclusão'}
+			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
