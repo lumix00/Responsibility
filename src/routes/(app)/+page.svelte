@@ -9,8 +9,9 @@
 	import TransactionItem from '$lib/components/homePage/TransactionItem.svelte';
 	import ChartPlaceholder from '$lib/components/homePage/ChartPlaceholder.svelte';
 
-	import NovaReceita from '@/components/homePage/quickActions/NovaReceita.svelte';
-	import NovaDespesa from '@/components/homePage/quickActions/NovaDespesa.svelte';
+	import NovaTransacao from '@/components/homePage/quickActions/NovaTransacao.svelte';
+	import NovoTipo from '@/components/homePage/quickActions/NovoTipo.svelte';
+	import GerenciarCategorias from '@/components/homePage/quickActions/GerenciarCategorias.svelte';
 	import Relatorios from '@/components/homePage/quickActions/Relatorios.svelte';
 
 	import { Wallet, Plus, Minus, Moon, Sun } from 'lucide-svelte';
@@ -31,8 +32,9 @@
 	];
 
 	const quickActions = [
-		{ component: NovaReceita, key: 'receita' },
-		{ component: NovaDespesa, key: 'despesa' },
+		{ component: NovaTransacao, key: 'transacao' },
+		{ component: NovoTipo, key: 'tipo' },
+		{ component: GerenciarCategorias, key: 'gerenciar-categorias' },
 		{ component: Relatorios, key: 'relatorios' }
 	];
 </script>
