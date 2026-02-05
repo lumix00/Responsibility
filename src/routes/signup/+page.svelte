@@ -20,11 +20,11 @@
 				<div class="grid gap-4">
 					<div class="grid gap-2">
 						<Label for="username">Usuário</Label>
-						<Input id="username" name="username" type="text" placeholder="seuusuario" required />
+						<Input id="username" name="username" type="text" placeholder="seu usuario" required />
 					</div>
 					<div class="grid gap-2">
 						<Label for="password">Senha</Label>
-						<Input id="password" name="password" type="password" required />
+						<Input id="password" name="password" type="password" placeholder="sua senha" required />
 					</div>
 					{#if form?.error}
 						<p class="text-sm text-red-500">{form.error}</p>

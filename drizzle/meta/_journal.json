@@ -8,6 +8,20 @@
       "when": 1770230045485,
       "tag": "0000_dapper_swordsman",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1770296527512,
+      "tag": "0001_wealthy_warhawk",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1770296671467,
+      "tag": "0002_flimsy_william_stryker",
+      "breakpoints": true
     }
   ]
 }

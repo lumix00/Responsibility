@@ -7,8 +7,25 @@
 	import type { ActionData } from './$types'; // Importe para tipar
 
 	export let form: ActionData & { error?: string }; // Tipagem corrigida
+
+	import { theme } from '$lib/stores/theme';
+	import { Switch } from '$lib/components/ui/switch';
+
+	import { Moon, Sun } from 'lucide-svelte';
 </script>
 
+<div class="fixed right-4 bottom-4 z-50 flex items-center gap-2">
+	{#if $theme === 'dark'}
+		<Moon class="h-4 w-4" />
+	{:else}
+		<Sun class="h-4 w-4" />
+	{/if}
+
+	<Switch
+		checked={$theme === 'dark'}
+		onCheckedChange={(checked) => theme.set(checked ? 'dark' : 'light')}
+	/>
+</div>
 <div class="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-900">
 	<Card.Root class="w-full max-w-md p-6">
 		<Card.Header>

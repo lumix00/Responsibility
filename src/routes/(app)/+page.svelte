@@ -6,20 +6,14 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 
 	import CardSummary from '$lib/components/homePage/CardSummary.svelte';
-	import QuickAction from '$lib/components/homePage/QuickAction.svelte';
 	import TransactionItem from '$lib/components/homePage/TransactionItem.svelte';
 	import ChartPlaceholder from '$lib/components/homePage/ChartPlaceholder.svelte';
 
-	import {
-		CirclePlus,
-		CircleMinus,
-		SquareChartGantt,
-		Wallet,
-		Plus,
-		Minus,
-		Moon,
-		Sun
-	} from 'lucide-svelte';
+	import NovaReceita from '@/components/homePage/quickActions/NovaReceita.svelte';
+	import NovaDespesa from '@/components/homePage/quickActions/NovaDespesa.svelte';
+	import Relatorios from '@/components/homePage/quickActions/Relatorios.svelte';
+
+	import { Wallet, Plus, Minus, Moon, Sun } from 'lucide-svelte';
 	import { theme } from '$lib/stores/theme';
 	import { Switch } from '$lib/components/ui/switch';
 
@@ -37,9 +31,9 @@
 	];
 
 	const quickActions = [
-		{ label: 'Nova Receita', icon: CirclePlus, href: '/receita' },
-		{ label: 'Nova Despesa', icon: CircleMinus, href: '/despesa' },
-		{ label: 'Relatórios', icon: SquareChartGantt, href: '/relatorios' }
+		{ component: NovaReceita, key: 'receita' },
+		{ component: NovaDespesa, key: 'despesa' },
+		{ component: Relatorios, key: 'relatorios' }
 	];
 </script>
 
@@ -109,9 +103,10 @@
 			<Card.Header>
 				<Card.Title>Ações Rápidas</Card.Title>
 			</Card.Header>
+
 			<Card.Content class="space-y-3">
-				{#each quickActions as act}
-					<QuickAction {...act} />
+				{#each quickActions as act (act.key)}
+					<svelte:component this={act.component} />
 				{/each}
 			</Card.Content>
 		</Card.Root>
