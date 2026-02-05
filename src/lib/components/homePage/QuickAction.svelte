@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button/index.js';
-	import { Icon } from 'lucide-svelte';
+	import { Button } from '$lib/components/ui/button';
 
 	export let label;
 	export let icon;
@@ -9,7 +8,7 @@
 
 <a {href}>
 	<Button variant="outline" class="w-full justify-start">
-		<Icon class="mr-2 h-5 w-5" />
+		<svelte:component this={icon} class="mr-2 h-5 w-5" />
 		{label}
 	</Button>
 </a>

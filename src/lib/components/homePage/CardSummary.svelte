@@ -1,18 +1,22 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card/index.js';
 
-	import * as Icons from 'lucide-svelte';
-
 	export let title;
 	export let value;
 	export let icon;
-	import { Icon } from 'lucide-svelte';
+	export let color;
 </script>
 
 <Card.Root class="flex items-center space-x-4 p-4">
-	<Icon class="h-8 w-8 text-primary" />
+	<svelte:component this={icon} class={`mr-2 h-5 w-5 ${color}`} />
+
 	<div>
-		<div class="text-sm text-muted-foreground uppercase">{title}</div>
-		<div class="text-lg font-bold">{value}</div>
+		<div class="text-sm text-muted-foreground uppercase">
+			{title}
+		</div>
+
+		<div class={`text-lg font-bold ${color}`}>
+			{value}
+		</div>
 	</div>
 </Card.Root>

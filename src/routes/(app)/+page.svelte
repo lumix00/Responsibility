@@ -10,11 +10,24 @@
 	import TransactionItem from '$lib/components/homePage/TransactionItem.svelte';
 	import ChartPlaceholder from '$lib/components/homePage/ChartPlaceholder.svelte';
 
+	import {
+		CirclePlus,
+		CircleMinus,
+		SquareChartGantt,
+		Wallet,
+		Plus,
+		Minus,
+		Moon,
+		Sun
+	} from 'lucide-svelte';
+	import { theme } from '$lib/stores/theme';
+	import { Switch } from '$lib/components/ui/switch';
+
 	// dados fake pra demo
 	const summary = [
-		{ title: 'Saldo Atual', value: 'R$ 8.250,00', icon: 'Wallet' },
-		{ title: 'Receitas', value: 'R$ 3.450,00', icon: 'ArrowUpRight' },
-		{ title: 'Despesas', value: 'R$ 1.980,00', icon: 'ArrowDownRight' }
+		{ title: 'Saldo Atual', value: 'R$ 8.250,00', icon: Wallet, color: 'text-blue-500' },
+		{ title: 'Receitas', value: 'R$ 3.450,00', icon: Plus, color: 'text-green-500' },
+		{ title: 'Despesas', value: 'R$ 1.980,00', icon: Minus, color: 'text-red-500' }
 	];
 
 	const transactions = [
@@ -24,9 +37,9 @@
 	];
 
 	const quickActions = [
-		{ label: 'Nova Receita', icon: 'PlusCircle', href: '/receita' },
-		{ label: 'Nova Despesa', icon: 'MinusCircle', href: '/despesa' },
-		{ label: 'Relatórios', icon: 'BarChart', href: '/relatorios' }
+		{ label: 'Nova Receita', icon: CirclePlus, href: '/receita' },
+		{ label: 'Nova Despesa', icon: CircleMinus, href: '/despesa' },
+		{ label: 'Relatórios', icon: SquareChartGantt, href: '/relatorios' }
 	];
 </script>
 
@@ -34,12 +47,28 @@
 	<!-- Header -->
 	<div class="flex items-center justify-between">
 		<h1 class="text-2xl font-bold">Painel Financeiro</h1>
-		<form action="/api/logout" method="post">
-			<Button type="submit" variant="destructive" size="sm" class="gap-2">
-				<LogOut class="h-4 w-4" />
-				Sair
-			</Button>
-		</form>
+
+		<div class="flex items-center gap-3">
+			<div class="flex items-center gap-2">
+				{#if $theme === 'dark'}
+					<Moon class="h-4 w-4" />
+				{:else}
+					<Sun class="h-4 w-4" />
+				{/if}
+
+				<Switch
+					checked={$theme === 'dark'}
+					onCheckedChange={(checked) => theme.set(checked ? 'dark' : 'light')}
+				/>
+			</div>
+
+			<form action="/api/logout" method="post">
+				<Button type="submit" variant="destructive" size="sm" class="gap-2">
+					<LogOut class="h-4 w-4" />
+					Sair
+				</Button>
+			</form>
+		</div>
 	</div>
 
 	<!-- Cards de resumo -->
