@@ -14,6 +14,7 @@
 	import GerenciarCategorias from '@/components/homePage/quickActions/GerenciarCategorias.svelte';
 	import GerenciarTransacoes from '@/components/homePage/quickActions/GerenciarTransacoes.svelte';
 	import Relatorios from '@/components/homePage/quickActions/Relatorios.svelte';
+	import LançarExcel from '@/components/homePage/quickActions/LancarExcel.svelte';
 
 	import { Wallet, Plus, Minus, Moon, Sun } from 'lucide-svelte';
 	import { theme } from '$lib/stores/theme';
@@ -27,7 +28,8 @@
 		{ component: GerenciarCategorias, key: 'gerenciar-categorias' },
 		{ component: NovoTipo, key: 'tipo' },
 		{ component: GerenciarTransacoes, key: 'gerenciar-transacoes' },
-		{ component: Relatorios, key: 'relatorios' }
+		{ component: Relatorios, key: 'relatorios' },
+		{ component: LançarExcel, key: 'LançarExcel' }
 	];
 
 	let transactions = $state<TransacaoDTO[]>([]);
