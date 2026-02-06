@@ -6,6 +6,7 @@
 	import { Badge } from '$lib/components/ui/badge/index.js'; // opcional, para mostrar o nome do arquivo
 
 	import { FileSpreadsheet, Upload, X } from 'lucide-svelte';
+	import { transactionsStore } from '@/stores/transacoes';
 
 	let open = $state(false);
 	let isSubmitting = $state(false);
@@ -72,6 +73,7 @@
 		} catch (err) {
 			alert('Erro ao enviar a planilha. Tente novamente.');
 		} finally {
+			await transactionsStore.refresh();
 			isSubmitting = false;
 		}
 	}

@@ -1,9 +1,15 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import * as XLSX from 'xlsx';
+import { spreadSheetUpdate } from '@/server/db/functions/spreadSheetUpdate';
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
 	try {
+		const user = locals.user;
+
+		if (!user) {
+			return json({ success: false, error: 'Nenhum arquivo enviado' }, { status: 400 });
+		}
 		const formData = await request.formData();
 		const file = formData.get('planilha') as File | null;
 
@@ -62,6 +68,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
 			// Filtra apenas linhas que têm valor em 'saida' (não vazio/nulo)
 			const saidasFiltradas = saidaJson.filter((row) => {
+				//@ts-expect-error //REMOVE
 				const v = row.saida;
 				return v !== null && v !== undefined && v !== '' && v !== 0 && v !== '0';
 			});
@@ -81,19 +88,25 @@ export const POST: RequestHandler = async ({ request }) => {
 			});
 
 			const entradasFiltradas = entradaJson.filter((row) => {
+				//@ts-expect-error //REMOVE
 				const v = row.entrada;
 				return v !== null && v !== undefined && v !== '' && v !== 0 && v !== '0';
 			});
 
+			//@ts-expect-error //REMOVE
 			result.sheets[sheetName] = {
 				saidas: saidasFiltradas,
 				entradas: entradasFiltradas
 			};
 		});
 
+		// A FUNÇÃO IRA VIR AQUI PARA PROCESSAR OS DADOS E SALVAR NO BANCO
+		const planilhaData = result.sheets;
+		const updateResult = await spreadSheetUpdate(user.id, planilhaData);
+
 		return json({
 			success: true,
-			data: result
+			updateResult
 		});
 	} catch (error) {
 		console.error('Erro ao processar XLSX:', error);
