@@ -7,13 +7,13 @@
 
 	import CardSummary from '$lib/components/homePage/CardSummary.svelte';
 	import TransactionItem from '$lib/components/homePage/TransactionItem.svelte';
-	import ChartPlaceholder from '$lib/components/homePage/ChartPlaceholder.svelte';
+	import ChartPlaceholder from '@/components/homePage/ChartAnual.svelte';
 
 	import NovaTransacao from '@/components/homePage/quickActions/NovaTransacao.svelte';
 	import NovoTipo from '@/components/homePage/quickActions/NovoTipo.svelte';
 	import GerenciarCategorias from '@/components/homePage/quickActions/GerenciarCategorias.svelte';
-	import Relatorios from '@/components/homePage/quickActions/Relatorios.svelte';
 	import GerenciarTransacoes from '@/components/homePage/quickActions/GerenciarTransacoes.svelte';
+	import Relatorios from '@/components/homePage/quickActions/Relatorios.svelte';
 
 	import { Wallet, Plus, Minus, Moon, Sun } from 'lucide-svelte';
 	import { theme } from '$lib/stores/theme';

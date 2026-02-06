@@ -4,7 +4,7 @@ import { browser } from '$app/environment';
 type Theme = 'light' | 'dark';
 
 function getInitialTheme(): Theme {
-	if (!browser) return 'light';
+	if (!browser) return 'dark';
 
 	const stored = localStorage.getItem('theme') as Theme | null;
 	if (stored) return stored;
