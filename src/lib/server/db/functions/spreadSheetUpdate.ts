@@ -1,19 +1,18 @@
 // src/lib/server/db/functions/spreadSheetUpdate.ts
 
-import { db } from '$lib/server/db'; // ajuste o import conforme sua estrutura (drizzle db instance)
-import { tiposTransacao, transacoes } from '$lib/server/db/schema'; // ajuste o caminho do schema
-import { eq, and } from 'drizzle-orm';
+import { db } from '$lib/server/db';
+import { tiposTransacao, transacoes } from '$lib/server/db/schema';
+import { eq, and, inArray } from 'drizzle-orm';
 import type { InferInsertModel } from 'drizzle-orm';
 
-// Tipos baseados no seu schema
 type NewTransacao = InferInsertModel<typeof transacoes>;
+type NewTipoTransacao = InferInsertModel<typeof tiposTransacao>;
 
-// Interface para os dados que vêm da planilha (baseado no seu parsing)
 interface PlanilhaMovimento {
 	comentario: string | null;
 	categoria: string | null;
-	data: string | Date | null; // XLSX pode vir como Date ou string
-	saida?: number | string | null; // pode ser string por causa do parsing
+	data: string | Date | null;
+	saida?: number | string | null;
 	entrada?: number | string | null;
 }
 
@@ -23,132 +22,191 @@ interface PlanilhaData {
 }
 
 /**
- * Processa os dados da planilha e atualiza o banco:
- * - Cria categorias (tipos_transacao) se não existirem
- * - Insere as transações vinculadas
+ * Processa os dados da planilha de forma eficiente:
+ * - Padroniza nomes de categorias em UPPERCASE
+ * - Coleta todas categorias únicas → busca + cria em batch
+ * - Coleta todas transações válidas → insere tudo de uma vez (bulk insert)
  */
 export async function spreadSheetUpdate(
 	userId: string,
-	planilhaData: Record<string, PlanilhaData> // { [sheetName: string]: { saidas: [], entradas: [] } }
+	planilhaData: Record<string, PlanilhaData>
 ): Promise<{ inserted: number; createdCategories: number }> {
-	let totalInserted = 0;
-	const totalCreatedCategories = 0;
+	// ─── Estruturas de apoio ─────────────────────────────────────────────────────
+	const transacoesToInsert: NewTransacao[] = [];
+	const categoriaMap = new Map<string, number>(); // chave: "NOME_UPPER|tipo" → id
 
-	// Processa cada aba da planilha
+	let createdCategoriesCount = 0;
+
+	// ─── 1. Coletar todas as categorias únicas usadas na planilha ────────────────
+	const categoriaSet = new Set<string>(); // "NOME_UPPER|tipo"
+
 	for (const sheetName in planilhaData) {
 		const { saidas, entradas } = planilhaData[sheetName];
 
-		// ─── 1. Processar SAÍDAS (despesas) ───────────────────────────────────────
 		for (const row of saidas) {
 			if (!row.categoria?.trim() || !row.data || !row.saida) continue;
-
 			const valor = Number(row.saida);
 			if (isNaN(valor) || valor <= 0) continue;
 
-			const categoriaNome = row.categoria.trim();
-
-			// Busca ou cria a categoria (despesa)
-			const tipoId = await findOrCreateCategoria(userId, categoriaNome, 'despesa');
-
-			// Prepara a transação
-			const transacao: NewTransacao = {
-				userId,
-				tipoTransacaoId: tipoId,
-				valor: valor.toFixed(2), // decimal no banco
-				data: normalizarData(row.data),
-				comentario: row.comentario?.trim() ?? null
-			};
-
-			await db.insert(transacoes).values(transacao);
-			totalInserted++;
+			const nomeUpper = row.categoria.trim().toUpperCase();
+			categoriaSet.add(`${nomeUpper}|despesa`);
 		}
 
-		// ─── 2. Processar ENTRADAS (receitas) ─────────────────────────────────────
 		for (const row of entradas) {
 			if (!row.categoria?.trim() || !row.data || !row.entrada) continue;
-
 			const valor = Number(row.entrada);
 			if (isNaN(valor) || valor <= 0) continue;
 
-			const categoriaNome = row.categoria.trim();
+			const nomeUpper = row.categoria.trim().toUpperCase();
+			categoriaSet.add(`${nomeUpper}|receita`);
+		}
+	}
 
-			// Busca ou cria a categoria (receita)
-			const tipoId = await findOrCreateCategoria(userId, categoriaNome, 'receita');
+	if (categoriaSet.size === 0) {
+		return { inserted: 0, createdCategories: 0 };
+	}
 
-			const transacao: NewTransacao = {
+	// Converter Set → array de objetos
+	const uniqueCategorias = Array.from(categoriaSet).map((key) => {
+		const [nomeUpper, tipo] = key.split('|');
+		return { nomeUpper, tipo: tipo as 'despesa' | 'receita' };
+	});
+
+	const nomesUpper = uniqueCategorias.map((c) => c.nomeUpper);
+
+	// ─── 2. Buscar categorias existentes (uma única query) ───────────────────────
+	const existentes = await db
+		.select({
+			id: tiposTransacao.id,
+			nome: tiposTransacao.nome,
+			movimentoTipo: tiposTransacao.movimentoTipo
+		})
+		.from(tiposTransacao)
+		.where(and(eq(tiposTransacao.userId, userId), inArray(tiposTransacao.nome, nomesUpper)));
+
+	// Popular o mapa com as existentes
+	for (const cat of existentes) {
+		const key = `${cat.nome}|${cat.movimentoTipo}`;
+		categoriaMap.set(key, cat.id);
+	}
+
+	// ─── 3. Criar as categorias que ainda não existem (bulk insert) ─────────────
+	const toCreate = uniqueCategorias.filter((c) => !categoriaMap.has(`${c.nomeUpper}|${c.tipo}`));
+
+	if (toCreate.length > 0) {
+		const newCategorias: NewTipoTransacao[] = toCreate.map((c) => ({
+			userId,
+			nome: c.nomeUpper, // já em UPPERCASE
+			movimentoTipo: c.tipo
+			// createdAt / updatedAt → se tiver default no schema, pode omitir
+		}));
+
+		const created = await db.insert(tiposTransacao).values(newCategorias).returning({
+			id: tiposTransacao.id,
+			nome: tiposTransacao.nome,
+			movimentoTipo: tiposTransacao.movimentoTipo
+		});
+
+		for (const cat of created) {
+			const key = `${cat.nome}|${cat.movimentoTipo}`;
+			categoriaMap.set(key, cat.id);
+		}
+
+		createdCategoriesCount = created.length;
+	}
+
+	// ─── 4. Agora montar todas as transações (com tipoTransacaoId resolvido) ─────
+	for (const sheetName in planilhaData) {
+		const { saidas, entradas } = planilhaData[sheetName];
+
+		for (const row of saidas) {
+			if (!row.categoria?.trim() || !row.data || !row.saida) continue;
+			const valor = Number(row.saida);
+			if (isNaN(valor) || valor <= 0) continue;
+
+			const nomeUpper = row.categoria.trim().toUpperCase();
+			const key = `${nomeUpper}|despesa`;
+			const tipoId = categoriaMap.get(key);
+
+			if (tipoId === undefined) continue; // segurança (não deve ocorrer)
+
+			transacoesToInsert.push({
 				userId,
 				tipoTransacaoId: tipoId,
 				valor: valor.toFixed(2),
 				data: normalizarData(row.data),
 				comentario: row.comentario?.trim() ?? null
-			};
+			});
+		}
 
-			await db.insert(transacoes).values(transacao);
-			totalInserted++;
+		for (const row of entradas) {
+			if (!row.categoria?.trim() || !row.data || !row.entrada) continue;
+			const valor = Number(row.entrada);
+			if (isNaN(valor) || valor <= 0) continue;
+
+			const nomeUpper = row.categoria.trim().toUpperCase();
+			const key = `${nomeUpper}|receita`;
+			const tipoId = categoriaMap.get(key);
+
+			if (tipoId === undefined) continue;
+
+			transacoesToInsert.push({
+				userId,
+				tipoTransacaoId: tipoId,
+				valor: valor.toFixed(2),
+				data: normalizarData(row.data),
+				comentario: row.comentario?.trim() ?? null
+			});
 		}
 	}
 
+	// ─── 5. Um único INSERT com todas as transações válidas ──────────────────────
+	let insertedCount = 0;
+	if (transacoesToInsert.length > 0) {
+		await db.insert(transacoes).values(transacoesToInsert);
+		insertedCount = transacoesToInsert.length;
+	}
+
 	return {
-		inserted: totalInserted,
-		createdCategories: totalCreatedCategories
+		inserted: insertedCount,
+		createdCategories: createdCategoriesCount
 	};
 }
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-async function findOrCreateCategoria(
-	userId: string,
-	nome: string,
-	movimentoTipo: 'receita' | 'despesa'
-): Promise<number> {
-	const existing = await db
-		.select({ id: tiposTransacao.id })
-		.from(tiposTransacao)
-		.where(
-			and(
-				eq(tiposTransacao.userId, userId),
-				eq(tiposTransacao.nome, nome),
-				eq(tiposTransacao.movimentoTipo, movimentoTipo)
-			)
-		)
-		.limit(1);
-
-	if (existing.length > 0) {
-		return existing[0].id;
-	}
-
-	// Cria nova categoria
-	const [newTipo] = await db
-		.insert(tiposTransacao)
-		.values({
-			userId,
-			nome,
-			movimentoTipo
-		})
-		.returning({ id: tiposTransacao.id });
-
-	// totalCreatedCategories++; // se quiser contar no escopo superior, passe como ref ou use outro mecanismo
-	return newTipo.id;
-}
+// ─── Helpers ────────────────────────────────────────────────────────────────────
 
 function normalizarData(data: string | Date | null): Date {
-	if (!data) return new Date(); // fallback (ou throw error)
+	if (!data) {
+		console.warn('Data ausente na planilha → usando data atual');
+		return new Date();
+	}
 
-	if (data instanceof Date) {
+	if (data instanceof Date && !isNaN(data.getTime())) {
 		return data;
 	}
 
-	// Tenta parsear strings comuns (dd/mm/yyyy, etc.)
+	// Tenta parsear string (dd/mm/yyyy ou outros formatos comuns)
 	const parsed = new Date(data);
 	if (!isNaN(parsed.getTime())) {
 		return parsed;
 	}
 
-	// Caso XLSX tenha vindo como string no formato desejado
-	const [dia, mes, ano] = data.split('/');
-	if (dia && mes && ano) {
-		const d = new Date(Number(ano), Number(mes) - 1, Number(dia));
-		if (!isNaN(d.getTime())) return d;
+	// Tentativa explícita para formato brasileiro dd/mm/yyyy
+	if (typeof data === 'string') {
+		const parts = data.split(/[-/]/);
+		if (parts.length === 3) {
+			// Tenta dd/mm/yyyy
+			const [dia, mes, ano] = parts.map(Number);
+			if (dia && mes && ano) {
+				const d = new Date(ano, mes - 1, dia);
+				if (!isNaN(d.getTime())) return d;
+			}
+
+			// Tenta yyyy-mm-dd
+			const [ano2, mes2, dia2] = parts.map(Number);
+			const d2 = new Date(ano2, mes2 - 1, dia2);
+			if (!isNaN(d2.getTime())) return d2;
+		}
 	}
 
 	console.warn(`Data inválida na planilha: ${data} → usando data atual`);

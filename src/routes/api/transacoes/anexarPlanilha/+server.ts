@@ -8,7 +8,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const user = locals.user;
 
 		if (!user) {
-			return json({ success: false, error: 'Nenhum arquivo enviado' }, { status: 400 });
+			return json({ success: false, error: 'Nenhum usuário logado' }, { status: 400 });
 		}
 		const formData = await request.formData();
 		const file = formData.get('planilha') as File | null;
@@ -20,13 +20,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		if (!file.name.toLowerCase().endsWith('.xlsx')) {
 			return json({ success: false, error: 'Apenas .xlsx permitido' }, { status: 400 });
 		}
-
-		// if (file.name !== 'Responsabilty-six.xlsx') {
-		// 	return json(
-		// 		{ success: false, error: 'Apenas o arquivo padrão é permitido permitido' },
-		// 		{ status: 400 }
-		// 	);
-		// }
 
 		const arrayBuffer = await file.arrayBuffer();
 		const buffer = Buffer.from(arrayBuffer);

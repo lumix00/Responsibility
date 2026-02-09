@@ -3,10 +3,12 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js'; // opcional, para mostrar o nome do arquivo
 
 	import { FileSpreadsheet, Upload, X } from 'lucide-svelte';
 	import { transactionsStore } from '@/stores/transacoes';
+
+	// ─── Import do Sonner ────────────────────────────────
+	import { toast } from 'svelte-sonner';
 
 	let open = $state(false);
 	let isSubmitting = $state(false);
@@ -18,23 +20,36 @@
 		}
 	});
 
+	// Função auxiliar para mostrar erro
+	function showError(message: string) {
+		toast.error(message, {
+			duration: 5000,
+			position: 'top-center'
+		});
+	}
+
+	function showSuccess(message: string) {
+		toast.success(message, {
+			duration: 4000,
+			position: 'top-center'
+		});
+	}
+
 	// Quando o usuário seleciona um arquivo
 	function onFileChange(event: Event) {
 		const input = event.target as HTMLInputElement;
 		if (input.files && input.files[0]) {
 			const file = input.files[0];
 
-			// Validação básica (opcional)
 			if (!file.name.toLowerCase().endsWith('.xlsx')) {
-				alert('Por favor, selecione apenas arquivos .xlsx');
-				input.value = ''; // limpa o input
+				showError('Por favor, selecione apenas arquivos .xlsx');
+				input.value = '';
 				selectedFile = null;
 				return;
 			}
 
 			if (file.size > 10 * 1024 * 1024) {
-				// exemplo: máx 10 MB
-				alert('O arquivo é muito grande (máximo 10 MB)');
+				showError('O arquivo é muito grande (máximo 10 MB)');
 				input.value = '';
 				selectedFile = null;
 				return;
@@ -46,7 +61,7 @@
 
 	async function handleSubmit() {
 		if (!selectedFile) {
-			alert('Selecione uma planilha antes de continuar.');
+			showError('Selecione uma planilha antes de continuar.');
 			return;
 		}
 
@@ -56,22 +71,22 @@
 			const formData = new FormData();
 			formData.append('planilha', selectedFile);
 
-			// Exemplo de envio (ajuste para sua API)
 			const res = await fetch('/api/transacoes/anexarPlanilha', {
 				method: 'POST',
 				body: formData
 			});
 
-			if (!res.ok) throw new Error('Falha no upload');
-
 			const result = await res.json();
-			console.log('Sucesso:', result);
 
-			// feedback de sucesso
-			alert('Planilha enviada com sucesso!');
-			open = false; // fecha o dialog
-		} catch (err) {
-			alert('Erro ao enviar a planilha. Tente novamente.');
+			if (!res.ok) {
+				throw new Error(result.error || 'Erro ao processar a planilha');
+			}
+
+			showSuccess('Planilha enviada com sucesso!');
+			open = false;
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : 'Erro inesperado ao enviar planilha';
+			showError(message);
 		} finally {
 			await transactionsStore.refresh();
 			isSubmitting = false;
@@ -84,39 +99,36 @@
 
 	function removerArquivo() {
 		selectedFile = null;
-		// também limpa o input file (opcional)
 		const input = document.getElementById('file-upload') as HTMLInputElement;
 		if (input) input.value = '';
 	}
 
 	function handleDragOver(event: DragEvent) {
-		event.preventDefault(); // ← essencial para permitir o drop
-		event.stopPropagation(); // opcional, mas ajuda em alguns casos
-		// dragActive = true;            // se você estiver usando highlight
+		event.preventDefault();
+		event.stopPropagation();
 	}
 
 	function handleDragLeave(event: DragEvent) {
 		event.preventDefault();
 		event.stopPropagation();
-		// dragActive = false;
 	}
 
 	function handleDrop(event: DragEvent) {
-		event.preventDefault(); // ← impede o navegador de abrir/baixar o arquivo
+		event.preventDefault();
 		event.stopPropagation();
 
 		const files = event.dataTransfer?.files;
 		if (!files || files.length === 0) return;
 
-		const file = files[0]; // ou loop se quiser múltiplos
+		const file = files[0];
 
 		if (!file.name.toLowerCase().endsWith('.xlsx')) {
-			alert('Por favor, selecione apenas arquivos .xlsx');
+			showError('Por favor, selecione apenas arquivos .xlsx');
 			return;
 		}
 
 		if (file.size > 10 * 1024 * 1024) {
-			alert('O arquivo é muito grande (máximo 10 MB)');
+			showError('O arquivo é muito grande (máximo 10 MB)');
 			return;
 		}
 
@@ -142,7 +154,6 @@
 
 		<div class="py-6">
 			{#if selectedFile}
-				<!-- arquivo já selecionado -->
 				<div class="flex items-center justify-between rounded-lg border bg-muted/40 px-4 py-3">
 					<div class="flex items-center gap-3">
 						<FileSpreadsheet class="h-8 w-8 text-primary" />
@@ -166,7 +177,6 @@
 
 				<p class="mt-4 text-center text-sm text-muted-foreground">Arquivo pronto para envio</p>
 			{:else}
-				<!-- área de drop / clique -->
 				<Label
 					for="file-upload"
 					class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-input bg-muted/30 p-10 text-center transition hover:bg-muted/50"
