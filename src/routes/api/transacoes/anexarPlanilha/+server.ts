@@ -21,12 +21,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			return json({ success: false, error: 'Apenas .xlsx permitido' }, { status: 400 });
 		}
 
-		if (file.name !== 'Responsabilty-six.xlsx') {
-			return json(
-				{ success: false, error: 'Apenas o arquivo padrão é permitido permitido' },
-				{ status: 400 }
-			);
-		}
+		// if (file.name !== 'Responsabilty-six.xlsx') {
+		// 	return json(
+		// 		{ success: false, error: 'Apenas o arquivo padrão é permitido permitido' },
+		// 		{ status: 400 }
+		// 	);
+		// }
 
 		const arrayBuffer = await file.arrayBuffer();
 		const buffer = Buffer.from(arrayBuffer);
