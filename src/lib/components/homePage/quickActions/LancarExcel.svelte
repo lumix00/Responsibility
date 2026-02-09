@@ -203,6 +203,15 @@
 		</div>
 
 		<Dialog.Footer>
+			<Button
+				variant="outline"
+				size="sm"
+				href="/api/planilha/template"
+				download="Modelo_Responsability_Six.xlsx"
+			>
+				<FileSpreadsheet class="mr-2 h-4 w-4" />
+				Baixar modelo
+			</Button>
 			<Button variant="outline" onclick={cancelar} disabled={isSubmitting}>Cancelar</Button>
 			<Button onclick={handleSubmit} disabled={isSubmitting || !selectedFile}>
 				{isSubmitting ? 'Lançando...' : 'Lançar Planilha'}
